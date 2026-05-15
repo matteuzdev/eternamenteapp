@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "Couple": {
+      "title": "Couple",
+      "description": "Represents a wedding event and couple's settings.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "User UID of the creator"
+        },
+        "names": {
+          "type": "string"
+        },
+        "weddingDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "venue": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "themeConfig": {
+          "type": "object",
+          "description": "Theme settings like colors and fonts"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "names",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Guest": {
+      "title": "Guest",
+      "description": "A guest invited to the given couple's wedding.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "groupName": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "confirmed",
+            "declined"
+          ]
+        },
+        "companions": {
+          "type": "number"
+        },
+        "dietaryNotes": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "openCount": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Gift": {
+      "title": "Gift",
+      "description": "A gift in the couple's wedding registry.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "store": { "type": "string" },
+        "link": { "type": "string" },
+        "reserved": { "type": "boolean" },
+        "reservedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "reserved", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/couples/{coupleId}": {
+      "schema": {
+        "$ref": "#/entities/Couple"
+      },
+      "description": "Store couples and their event details"
+    },
+    "/couples/{coupleId}/guests/{guestId}": {
+      "schema": {
+        "$ref": "#/entities/Guest"
+      },
+      "description": "Store guests for a specific couple's wedding"
+    },
+    "/couples/{coupleId}/gifts/{giftId}": {
+      "schema": {
+        "$ref": "#/entities/Gift"
+      },
+      "description": "Store gifts for a specific couple's wedding"
+    }
+  }
+}

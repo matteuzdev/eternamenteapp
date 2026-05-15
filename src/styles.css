@@ -1,0 +1,26 @@
+/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Great+Vibes&family=Montserrat:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bento-bg: #F8F4F0;
+  --color-bento-accent: #6B1A2A;
+  --color-bento-text: #333333;
+  --color-bento-card: #ffffff;
+  --color-bento-border: #EEEEEE;
+  --color-bento-confirmed: #2ecc71;
+  --color-bento-pending: #f39c12;
+
+  --font-sans: "Montserrat", sans-serif;
+  --font-serif: "Cormorant Garamond", serif;
+  --font-display: "Great Vibes", cursive;
+
+  --shadow-bento: 0 4px 20px rgba(0,0,0,0.02);
+  --radius-bento: 16px;
+  --radius-btn: 12px;
+}
+
+body {
+  background-color: var(--color-bento-bg);
+}

@@ -1,0 +1,125 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isValidCouple(data) {
+      return data.keys().hasAll(['ownerId', 'names'])
+        && data.ownerId is string && data.ownerId.size() <= 128
+        && data.names is string && data.names.size() <= 200
+        && ( !('weddingDate' in data) || (data.weddingDate is string && data.weddingDate.size() <= 100) )
+        && ( !('time' in data) || (data.time is string && data.time.size() <= 50) )
+        && ( !('venue' in data) || (data.venue is string && data.venue.size() <= 200) )
+        && ( !('address' in data) || (data.address is string && data.address.size() <= 500) )
+        && ( !('message' in data) || (data.message is string && data.message.size() <= 2000) )
+        && ( !('rsvpDeadline' in data) || (data.rsvpDeadline is string && data.rsvpDeadline.size() <= 100) )
+        && ( !('themeId' in data) || (data.themeId is string && data.themeId.size() <= 50) )
+        && ( !('themeConfig' in data) || data.themeConfig is map );
+    }
+
+    match /couples/{coupleId} {
+      allow get: if isValidId(coupleId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+                    && isValidId(coupleId) 
+                    && isValidCouple(incoming()) 
+                    && incoming().ownerId == request.auth.uid;
+                    
+      allow update: if isSignedIn() 
+                    && isValidId(coupleId) 
+                    && existing().ownerId == request.auth.uid
+                    && isValidCouple(incoming())
+                    && incoming().ownerId == existing().ownerId;
+                    
+      allow delete: if isSignedIn() 
+                    && isValidId(coupleId) 
+                    && existing().ownerId == request.auth.uid;
+
+      function isCoupleOwner() {
+        let couple = get(/databases/$(database)/documents/couples/$(coupleId));
+        return couple != null && couple.data.ownerId == request.auth.uid;
+      }
+
+      function isValidGuest(data) {
+        return data.keys().hasAll(['name', 'status'])
+          && data.name is string && data.name.size() <= 200
+          && data.status is string && data.status in ['pending', 'confirmed', 'declined']
+          && ( !('email' in data) || (data.email is string && data.email.size() <= 200) )
+          && ( !('phone' in data) || (data.phone is string && data.phone.size() <= 50) )
+          && ( !('groupName' in data) || (data.groupName is string && data.groupName.size() <= 100) )
+          && ( !('companions' in data) || (data.companions is number && data.companions >= 0 && data.companions <= 20) )
+          && ( !('dietaryNotes' in data) || (data.dietaryNotes is string && data.dietaryNotes.size() <= 500) )
+          && ( !('message' in data) || (data.message is string && data.message.size() <= 1000) )
+          && ( !('openCount' in data) || data.openCount is number );
+      }
+
+      match /guests/{guestId} {
+        // Guests can read their own invite via the unguessable guestId.
+        allow get: if isValidId(guestId);
+        // Only owners can list guests
+        allow list: if isSignedIn() && isCoupleOwner();
+
+        allow create: if isSignedIn() 
+                      && isValidId(guestId)
+                      && isCoupleOwner()
+                      && isValidGuest(incoming());
+
+        allow update: if isValidId(guestId) && (
+                        // Owner full update
+                        (isSignedIn() && isCoupleOwner() && isValidGuest(incoming()))
+                        ||
+                        // unauthenticated guest RSVP update
+                        (isValidGuest(incoming()) 
+                         && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'companions', 'dietaryNotes', 'message', 'openCount', 'updatedAt']))
+                      );
+
+        allow delete: if isSignedIn() 
+                      && isValidId(guestId)
+                      && isCoupleOwner();
+      }
+      function isValidGift(data) {
+        return data.keys().hasAll(['name', 'reserved'])
+          && data.name is string && data.name.size() <= 200
+          && data.reserved is bool
+          && ( !('category' in data) || (data.category is string && data.category.size() <= 100) )
+          && ( !('price' in data) || data.price is number || data.price is string ) // allow string or number to be safe
+          && ( !('store' in data) || (data.store is string && data.store.size() <= 200) )
+          && ( !('link' in data) || (data.link is string && data.link.size() <= 1000) )
+          && ( !('reservedBy' in data) || (data.reservedBy is string && data.reservedBy.size() <= 200) );
+      }
+
+      match /gifts/{giftId} {
+        allow get: if isValidId(giftId);
+        allow list: if true;
+
+        allow create: if isSignedIn() 
+                      && isValidId(giftId)
+                      && isCoupleOwner()
+                      && isValidGift(incoming());
+
+        allow update: if isValidId(giftId) && (
+                        (isSignedIn() && isCoupleOwner() && isValidGift(incoming()))
+                        ||
+                        (isValidGift(incoming()) 
+                         && incoming().diff(existing()).affectedKeys().hasOnly(['reserved', 'reservedBy', 'updatedAt']))
+                      );
+
+        allow delete: if isSignedIn() 
+                      && isValidId(giftId)
+                      && isCoupleOwner();
+      }
+    }
+  }
+}
